@@ -8,17 +8,20 @@
 -- Implement compiler
 -- Implement tests
 -- CI/CD
+{-# LANGUAGE TupleSections #-}
+
 module Main where
 
 import Control.DeepSeq
 import Control.Lens (element, (&), (.~))
 import Control.Monad
-import Control.Monad.Loops
+import Control.Monad.Loops (iterateWhile)
 import Control.Monad.State
 import qualified Data.Array as A
 --import Data.Sequence
 
 import Data.Char
+import Data.Either
 import qualified Data.Ix as I
 import Debug.Trace
 import System.IO
@@ -92,7 +95,7 @@ charOut :: StateT ProgramState IO Status
 charOut = do
   st <- get
   io $ putStr [chr (tape st !! ptr st)]
-  state (\xs -> (Running, xs))
+  state (Running,)
 
 charIn :: StateT ProgramState IO Status
 charIn = do
@@ -118,7 +121,7 @@ popInstruction = do
         newProg = drop 1 prog'
 
 exit :: StateT ProgramState IO Status
-exit = state (\s -> (Exited, s))
+exit = state (Exited,)
 
 loop :: [Stmt] -> StateT ProgramState IO Status
 loop stmts = do
@@ -166,10 +169,92 @@ runTestPrg = do
   io $ print st
   return ()
 
-main :: IO ()
-main = do
-  hSetBuffering stdin NoBuffering
-  void (runStateT runTestPrg newPState)
+--main :: IO ()
+--main = do
+--  hSetBuffering stdin NoBuffering
+--  void (runStateT runTestPrg newPState)
 
 io :: IO a -> StateT ProgramState IO a
 io = liftIO
+
+----------------------
+--
+data Token = PLUS | MINUS | GT' | LT' | COMMA | DOT | BRACKET_OPEN | BRACKET_CLOSE deriving (Show)
+
+type TokenList = [Token]
+
+tokenForChar :: Char -> Either ParseError Token
+tokenForChar '+' = Right PLUS
+tokenForChar '-' = Right MINUS
+tokenForChar '>' = Right GT'
+tokenForChar '<' = Right LT'
+tokenForChar ',' = Right COMMA
+tokenForChar '.' = Right DOT
+tokenForChar '[' = Right BRACKET_OPEN
+tokenForChar ']' = Right BRACKET_CLOSE
+tokenForChar x = Left $ ParseError InvalidCharacter ("Could not parse character: " ++ [x])
+
+data ParseErrorCode = InvalidCharacter | MismatchingBrackets deriving (Show)
+
+data ParseError = ParseError
+  { code :: ParseErrorCode,
+    message :: String
+  }
+  deriving (Show)
+
+lexer :: String -> Either ParseError TokenList
+lexer str =
+  case partitionEithers result of
+    ([], lst) -> Right lst
+    (x : xs, _) -> Left x
+  where
+    result = [tokenForChar c | c <- str]
+
+data ParseState = ParseState
+  { tokenList :: TokenList,
+    current :: [Stmt],
+    stack :: [[Stmt]]
+  }
+  deriving (Show)
+
+popToken :: State ParseState Token
+popToken = do
+  st <- get
+  state f
+  where
+    f s = (headToken tokenList', ParseState (tokenListTail tokenList') (current s) (stack s))
+      where
+        tokenList' = tokenList s
+        headToken (x : xs) = x
+        tokenListTail = drop 1
+
+parse :: State ParseState ()
+parse = do
+  tk <- popToken
+  return ()
+
+--case tokenList st of
+--  (x:xs) ->
+--case x of
+--  PLUS -> (++) <$> Right [Increment] <*> parse' xs
+--  MINUS -> (++) <$> Right [Decrement] <*> parse' xs
+--  GT' -> (++) <$> Right [MoveRight] <*> parse' xs
+--  LT' -> (++) <$> Right [MoveLeft] <*> parse' xs
+--  COMMA -> (++) <$> Right [CharIn] <*> parse' xs
+--  DOT -> (++) <$> Right [CharOut] <*> parse' xs
+--  BRACKET_OPEN -> (++) <$> Right [Loop []] <*> parse (ParseState (levelCount st) + 1) xs
+--  BRACKET_CLOSE -> Left $ ParseError MismatchingBrackets "Mismatching brackets."
+--where
+--  parse' = parse st
+
+--main :: IO ()
+--main = do
+--  let x = lexer "++>[]]+"
+--  case x of
+--    Right lx -> print $ parse lx (ParseState 0)
+--    Left err -> print err
+main = do
+  let x = lexer "++>[]]+"
+  case x of
+    Right lx -> print $ runState parse (ParseState lx [] [])
+    Left err -> print err
