@@ -24,6 +24,10 @@ dependencies:
   - mtl
   - containers
   - lens
+  - deepseq
+  - random
+  - array
+  - monad-loops
 
 library:
   source-dirs: src
@@ -41,6 +45,10 @@ executables:
       - mtl
       - containers
       - lens
+      - deepseq
+      - random
+      - array
+      - monad-loops
 
 tests:
   hstest-test:
