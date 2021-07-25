@@ -7,12 +7,9 @@
 -- Implement compiler
 -- Implement tests
 -- CI/CD
--- Wrap around 255
 {-# LANGUAGE TupleSections #-}
 
 module Main where
-
---import Data.Sequence
 
 import Ast
 import Control.DeepSeq

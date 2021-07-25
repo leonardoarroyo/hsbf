@@ -5,31 +5,19 @@ module Parser where
 import Ast
 import Control.Monad.Identity (Identity)
 import Data.Function (on)
-import Text.Parsec
+import Text.Parsec (Parsec, ParsecT, between, char, choice, many)
 
-rPlus :: Parsec String () Stmt
-rPlus = char '+' >> return Increment
-
-rMinus :: Parsec String () Stmt
-rMinus = char '-' >> return Decrement
-
-rGT :: Parsec String () Stmt
-rGT = char '>' >> return MoveRight
-
-rLT :: Parsec String () Stmt
-rLT = char '<' >> return MoveLeft
-
-rComma :: Parsec String () Stmt
-rComma = char ',' >> return CharIn
-
-rDot :: Parsec String () Stmt
-rDot = char '.' >> return CharOut
-
-rLoop :: ParsecT String () Identity Stmt
-rLoop = between (char '[') (char ']') (Text.Parsec.many rTermInstruction) >>= \stmts -> return $ Loop stmts
-
-rTermInstruction :: ParsecT String () Identity Stmt
-rTermInstruction = choice [rPlus, rMinus, rGT, rLT, rComma, rDot, rLoop]
+terminal :: ParsecT String () Identity Stmt
+terminal = choice [plus, minus, gt, lt, comma, dot, loop]
+  where
+    charStmt c v = char c >> return v
+    plus = charStmt '+' Increment
+    minus = charStmt '-' Decrement
+    gt = charStmt '>' MoveRight
+    lt = charStmt '<' MoveLeft
+    comma = charStmt ',' CharIn
+    dot = charStmt '.' CharOut
+    loop = between (char '[') (char ']') (many terminal) >>= \stmts -> return $ Loop stmts
 
 parseStmtSeq :: Parsec String () [Stmt]
-parseStmtSeq = Text.Parsec.many rTermInstruction
+parseStmtSeq = many terminal
