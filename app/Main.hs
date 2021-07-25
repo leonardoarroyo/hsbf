@@ -25,7 +25,7 @@ main :: IO ()
 main = do
   hSetBuffering stdin NoBuffering
   case parse parseStmtSeq "unknown" prog of
-    Right stmts -> void (runStateT runTestPrg (newProgram stmts))
+    Right stmts -> void (runStateT runProgram (newProgram stmts))
     Left err -> print "a"
   where
     --prog = ",+[-.,+]"

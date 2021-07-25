@@ -27,15 +27,13 @@ data ProgramState = ProgramState
 type ProgramStateM = State ProgramState
 
 newProgram :: [Stmt] -> ProgramState
-newProgram program =
-  ProgramState
-    [0 | i <- [0 .. 100]]
-    0
-    program
-    []
+newProgram program = ProgramState [0 | i <- [0 .. 100]] 0 program []
 
 getCell :: ProgramState -> Word8
 getCell st = tape st !! ptr st
+
+cellIsZero :: ProgramState -> Bool
+cellIsZero = (==) 0 . getCell
 
 continue :: b -> (Status, b)
 continue x = (Running, x)
@@ -56,21 +54,20 @@ headStatement :: [Stmt] -> Stmt
 headStatement (x : xs) = x
 headStatement [] = Exit
 
-loadProgram :: ProgramState -> [Stmt] -> ProgramState
-loadProgram st stmts = st {prog = stmts}
+loadProgram :: [Stmt] -> ProgramState -> ProgramState
+loadProgram stmts st = st {prog = stmts}
 
 stackProgram :: ProgramState -> ProgramState
 stackProgram st = st {prog = [], prog_stack = prog st : prog_stack st}
 
-restoreLoop :: ProgramState -> [Stmt] -> ProgramState
-restoreLoop st stmts = st {prog = Loop stmts : prog st}
+restoreLoop :: [Stmt] -> ProgramState -> ProgramState
+restoreLoop stmts st = st {prog = Loop stmts : prog st}
 
 popStack :: ProgramState -> ProgramState
-popStack st = st {prog = stack_head (prog_stack st), prog_stack = stack_tail (prog_stack st)}
+popStack st = st {prog = head' (prog_stack st), prog_stack = drop 1 (prog_stack st)}
   where
-    stack_head (x : xs) = x
-    stack_head [] = []
-    stack_tail = drop 1
+    head' (x : xs) = x
+    head' [] = []
 
 ------------------
 
@@ -94,21 +91,22 @@ charIn = do
 popInstruction :: StateT ProgramState IO Stmt
 popInstruction = state $ \s -> (headStatement (prog s), consumeProg s)
 
+restoreLoopIfNotZero :: [Stmt] -> ProgramState -> ProgramState
+restoreLoopIfNotZero stmts st
+  | cellIsZero st = st
+  | otherwise = restoreLoop stmts st
+
+loop :: [Stmt] -> StateT ProgramState IO ()
+loop stmts = do
+  start
+  iterateWhile (== Running) popAndRun
+  end
+  where
+    start = modify $ loadProgram stmts . stackProgram
+    end = modify $ restoreLoopIfNotZero stmts . popStack
+
 exit :: StateT ProgramState IO Status
 exit = state (Exited,)
-
-loop :: [Stmt] -> StateT ProgramState IO Status
-loop stmts = do
-  modify stackProgram
-  st <- get
-  put $ loadProgram st stmts
-  iterateWhile (== Running) popAndRun
-  modify popStack
-  st <- get
-  if tape st !! ptr st == 0
-    then put st
-    else put $ restoreLoop st stmts
-  return Running
 
 executeStatement :: Stmt -> StateT ProgramState IO Status
 executeStatement stmt = case stmt of
@@ -118,13 +116,13 @@ executeStatement stmt = case stmt of
   Decrement -> modifyCell $ flip (-) 1
   CharIn -> charIn
   CharOut -> charOut
-  Loop stmts -> loop stmts
+  Loop stmts -> loop stmts >> return Running
   Exit -> exit
 
 popAndRun :: StateT ProgramState IO Status
 popAndRun = popInstruction >>= executeStatement
 
-runTestPrg :: StateT ProgramState IO ()
-runTestPrg = do
+runProgram :: StateT ProgramState IO ()
+runProgram = do
   iterateWhile (== Running) popAndRun
   return ()
