@@ -28,4 +28,5 @@ main = do
     Right stmts -> void (runStateT runTestPrg (newProgram stmts))
     Left err -> print "a"
   where
-    prog = ",+[-.,+]"
+    --prog = ",+[-.,+]"
+    prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."

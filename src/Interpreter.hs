@@ -11,7 +11,6 @@ import Data.Char
 import qualified Data.Ix as I
 import Data.Word
 import Lib (showByte)
-import System.IO.Unsafe (unsafePerformIO)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
 
@@ -38,74 +37,78 @@ newProgram program =
 getCell :: ProgramState -> Word8
 getCell st = tape st !! ptr st
 
-modifyCell :: (Word8 -> Word8) -> StateT ProgramState IO Status
-modifyCell fn = state f
+continue :: b -> (Status, b)
+continue x = (Running, x)
+
+putTapeCell :: [Word8] -> Int -> Word8 -> [Word8]
+putTapeCell tape ptr value = tape & element ptr .~ value
+
+updateCell :: (Word8 -> Word8) -> ProgramState -> ProgramState
+updateCell fn s = s {tape = putTapeCell (tape s) (ptr s) (fn (getCell s))}
+
+updatePtr :: (Int -> Int) -> ProgramState -> ProgramState
+updatePtr fn s = s {ptr = fn (ptr s)}
+
+consumeProg :: ProgramState -> ProgramState
+consumeProg s = s {prog = tail (prog s)}
+
+headStatement :: [Stmt] -> Stmt
+headStatement (x : xs) = x
+headStatement [] = Exit
+
+loadProgram :: ProgramState -> [Stmt] -> ProgramState
+loadProgram st stmts = st {prog = stmts}
+
+stackProgram :: ProgramState -> ProgramState
+stackProgram st = st {prog = [], prog_stack = prog st : prog_stack st}
+
+restoreLoop :: ProgramState -> [Stmt] -> ProgramState
+restoreLoop st stmts = st {prog = Loop stmts : prog st}
+
+popStack :: ProgramState -> ProgramState
+popStack st = st {prog = stack_head (prog_stack st), prog_stack = stack_tail (prog_stack st)}
   where
-    f s = (Running, s {tape = newTape})
-      where
-        tape' = tape s
-        ptr' = ptr s
-        newTape = tape' & element ptr' .~ fn (getCell s)
+    stack_head (x : xs) = x
+    stack_head [] = []
+    stack_tail = drop 1
+
+------------------
+
+modifyCell :: (Word8 -> Word8) -> StateT ProgramState IO Status
+modifyCell fn = state $ continue . updateCell fn
 
 movePtr :: (Int -> Int) -> StateT ProgramState IO Status
-movePtr f = state (\s -> (Running, s {ptr = f (ptr s)}))
+movePtr fn = state $ continue . updatePtr fn
 
 charOut :: StateT ProgramState IO Status
 charOut = do
   st <- get
-  io $ putStr $ showByte $ getCell st
+  liftIO $ putStr $ showByte $ getCell st
   state (Running,)
 
 charIn :: StateT ProgramState IO Status
 charIn = do
-  char <- io getChar
-  state $ f char
-  where
-    f char s = (Running, s {tape = newTape})
-      where
-        actualTape = tape s
-        pointer = ptr s
-        newTape = actualTape & element pointer .~ fromIntegral (ord char)
+  char <- liftIO getChar
+  modifyCell $ const $ fromIntegral $ ord char
 
 popInstruction :: StateT ProgramState IO Stmt
-popInstruction = do
-  st' <- get
-  state f
-  where
-    f s = (headStatement prog', s {prog = newProg})
-      where
-        prog' = prog s
-        headStatement (x : xs) = x
-        headStatement [] = Exit
-        newProg = drop 1 prog'
+popInstruction = state $ \s -> (headStatement (prog s), consumeProg s)
 
 exit :: StateT ProgramState IO Status
 exit = state (Exited,)
 
 loop :: [Stmt] -> StateT ProgramState IO Status
 loop stmts = do
+  modify stackProgram
   st <- get
-  put $ stack_program st
-  st <- get
-  put $ load_program st stmts
+  put $ loadProgram st stmts
   iterateWhile (== Running) popAndRun
-  st <- get
-  put $ pop_stack st
+  modify popStack
   st <- get
   if tape st !! ptr st == 0
     then put st
-    else put $ restore_loop st stmts
+    else put $ restoreLoop st stmts
   return Running
-  where
-    f s = (Running, ProgramState (tape s) (ptr s) (prog s) (prog_stack s))
-    stack_program st = ProgramState (tape st) (ptr st) [] (prog st : prog_stack st)
-    load_program st stmts = ProgramState (tape st) (ptr st) stmts (prog_stack st)
-    restore_loop st stmts = ProgramState (tape st) (ptr st) (Loop stmts : prog st) (prog_stack st)
-    pop_stack st = ProgramState (tape st) (ptr st) (stack_head (prog_stack st)) (stack_tail (prog_stack st))
-      where
-        stack_head (x : xs) = x
-        stack_head [] = []
-        stack_tail = drop 1
 
 executeStatement :: Stmt -> StateT ProgramState IO Status
 executeStatement stmt = case stmt of
@@ -125,6 +128,3 @@ runTestPrg :: StateT ProgramState IO ()
 runTestPrg = do
   iterateWhile (== Running) popAndRun
   return ()
-
-io :: IO a -> StateT ProgramState IO a
-io = liftIO
