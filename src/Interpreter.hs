@@ -2,14 +2,18 @@
 
 module Interpreter where
 
-import Ast
+import Ast (Stmt (..))
 import Control.Lens (element, (&), (.~))
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.State
-import qualified Data.Array as A
-import Data.Char
-import qualified Data.Ix as I
-import Data.Word
+  ( MonadIO (liftIO),
+    MonadState (get, state),
+    State,
+    StateT,
+    modify,
+  )
+import Data.Char (ord)
+import Data.Word (Word8)
 import Lib (showByte)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
