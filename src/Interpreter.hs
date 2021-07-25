@@ -10,6 +10,7 @@ import qualified Data.Array as A
 import Data.Char
 import qualified Data.Ix as I
 import Data.Word
+import Lib (showByte)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
@@ -26,45 +27,33 @@ data ProgramState = ProgramState
 
 type ProgramStateM = State ProgramState
 
-newPState :: [Stmt] -> ProgramState
-newPState program =
+newProgram :: [Stmt] -> ProgramState
+newProgram program =
   ProgramState
     [0 | i <- [0 .. 100]]
     0
     program
     []
 
-increment :: StateT ProgramState IO Status
-increment = state f
+getCell :: ProgramState -> Word8
+getCell st = tape st !! ptr st
+
+modifyCell :: (Word8 -> Word8) -> StateT ProgramState IO Status
+modifyCell fn = state f
   where
-    f xs = (Running, ProgramState newTape (ptr xs) (prog xs) (prog_stack xs))
+    f s = (Running, s {tape = newTape})
       where
-        actualTape = tape xs
-        pointer = ptr xs
-        newTape = actualTape & element pointer .~ ((actualTape !! pointer) + 1)
+        tape' = tape s
+        ptr' = ptr s
+        newTape = tape' & element ptr' .~ fn (getCell s)
 
-decrement :: StateT ProgramState IO Status
-decrement = state f
-  where
-    f xs = (Running, ProgramState newTape (ptr xs) (prog xs) (prog_stack xs))
-      where
-        actualTape = tape xs
-        pointer = ptr xs
-        newTape = actualTape & element pointer .~ ((actualTape !! pointer) - 1)
-
-moveRight :: StateT ProgramState IO Status
-moveRight = state (\xs -> (Running, ProgramState (tape xs) (ptr xs + 1) (prog xs) (prog_stack xs)))
-
-moveLeft :: StateT ProgramState IO Status
-moveLeft = state (\xs -> (Running, ProgramState (tape xs) (ptr xs - 1) (prog xs) (prog_stack xs)))
-
-word8ToString :: Word8 -> String
-word8ToString x = [chr (read $ show x :: Int)]
+movePtr :: (Int -> Int) -> StateT ProgramState IO Status
+movePtr f = state (\s -> (Running, s {ptr = f (ptr s)}))
 
 charOut :: StateT ProgramState IO Status
 charOut = do
   st <- get
-  io $ putStr $ word8ToString $ tape st !! ptr st
+  io $ putStr $ showByte $ getCell st
   state (Running,)
 
 charIn :: StateT ProgramState IO Status
@@ -72,7 +61,7 @@ charIn = do
   char <- io getChar
   state $ f char
   where
-    f char s = (Running, ProgramState newTape (ptr s) (prog s) (prog_stack s))
+    f char s = (Running, s {tape = newTape})
       where
         actualTape = tape s
         pointer = ptr s
@@ -83,7 +72,7 @@ popInstruction = do
   st' <- get
   state f
   where
-    f s = (headStatement prog', ProgramState (tape s) (ptr s) newProg (prog_stack s))
+    f s = (headStatement prog', s {prog = newProg})
       where
         prog' = prog s
         headStatement (x : xs) = x
@@ -120,10 +109,10 @@ loop stmts = do
 
 executeStatement :: Stmt -> StateT ProgramState IO Status
 executeStatement stmt = case stmt of
-  MoveRight -> moveRight
-  MoveLeft -> moveLeft
-  Increment -> increment
-  Decrement -> decrement
+  MoveRight -> movePtr (+ 1)
+  MoveLeft -> movePtr $ flip (-) 1
+  Increment -> modifyCell (+ 1)
+  Decrement -> modifyCell $ flip (-) 1
   CharIn -> charIn
   CharOut -> charOut
   Loop stmts -> loop stmts

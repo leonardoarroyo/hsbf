@@ -1,7 +1,7 @@
-module Lib
-  ( someFunc,
-  )
-where
+module Lib where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import Data.Char
+import Data.Word
+
+showByte :: Word8 -> String
+showByte x = [chr (read $ show x :: Int)]
