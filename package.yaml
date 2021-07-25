@@ -28,6 +28,7 @@ dependencies:
   - random
   - array
   - monad-loops
+  - parsec
 
 library:
   source-dirs: src
@@ -49,6 +50,7 @@ executables:
       - random
       - array
       - monad-loops
+      - parsec
 
 tests:
   hstest-test:

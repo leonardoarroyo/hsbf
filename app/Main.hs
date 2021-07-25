@@ -1,4 +1,3 @@
--- TODO:
 -- Use efficient data structure for tape
 -- Improve main loop
 -- Refactor / simplify
@@ -8,42 +7,36 @@
 -- Implement compiler
 -- Implement tests
 -- CI/CD
+-- Wrap around 255
 {-# LANGUAGE TupleSections #-}
 
 module Main where
 
+--import Data.Sequence
+
+import Ast
 import Control.DeepSeq
 import Control.Lens (element, (&), (.~))
 import Control.Monad
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.State
 import qualified Data.Array as A
---import Data.Sequence
-
 import Data.Char
 import Data.Either
 import qualified Data.Ix as I
+import Data.Word
 import Debug.Trace
+import Parser
 import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 import System.Random (StdGen, getStdGen, randomR)
-
-data Stmt
-  = Increment
-  | Decrement
-  | MoveRight
-  | MoveLeft
-  | CharIn
-  | CharOut
-  | Loop [Stmt]
-  | Exit
-  deriving (Show, Eq)
+import Text.Parsec (parse)
 
 type Prog = [Stmt]
 
 type ProgramValue = Int
 
-type Tape = [Int]
+type Tape = [Word8]
 
 data Status = Running | Exited deriving (Eq)
 
@@ -59,12 +52,12 @@ type ProgramStateM = State ProgramState
 
 advance (x : xs) = xs
 
-newPState :: ProgramState
-newPState =
+newPState :: [Stmt] -> ProgramState
+newPState program =
   ProgramState
     [0 | i <- [0 .. 100]]
     0
-    [Increment, Increment, Increment, Loop [Decrement, MoveRight, Increment, Increment, Loop [Decrement, MoveRight, Increment, Increment, MoveLeft], MoveLeft]]
+    program
     []
 
 increment :: StateT ProgramState IO Status
@@ -91,10 +84,13 @@ moveRight = state (\xs -> (Running, ProgramState (tape xs) (ptr xs + 1) (prog xs
 moveLeft :: StateT ProgramState IO Status
 moveLeft = state (\xs -> (Running, ProgramState (tape xs) (ptr xs - 1) (prog xs) (prog_stack xs)))
 
+word8ToString :: Word8 -> String
+word8ToString x = [chr (read $ show x :: Int)]
+
 charOut :: StateT ProgramState IO Status
 charOut = do
   st <- get
-  io $ putStr [chr (tape st !! ptr st)]
+  io $ putStr $ word8ToString $ tape st !! ptr st
   state (Running,)
 
 charIn :: StateT ProgramState IO Status
@@ -106,7 +102,7 @@ charIn = do
       where
         actualTape = tape s
         pointer = ptr s
-        newTape = actualTape & element pointer .~ ord char
+        newTape = actualTape & element pointer .~ fromIntegral (ord char)
 
 popInstruction :: StateT ProgramState IO Stmt
 popInstruction = do
@@ -165,96 +161,16 @@ popAndRun = popInstruction >>= executeStatement
 runTestPrg :: StateT ProgramState IO ()
 runTestPrg = do
   iterateWhile (== Running) popAndRun
-  st <- get
-  io $ print st
   return ()
 
---main :: IO ()
---main = do
---  hSetBuffering stdin NoBuffering
---  void (runStateT runTestPrg newPState)
+main :: IO ()
+main = do
+  hSetBuffering stdin NoBuffering
+  case parse parseStmtSeq "unknown" prog of
+    Right stmts -> void (runStateT runTestPrg (newPState stmts))
+    Left err -> print "a"
+  where
+    prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."
 
 io :: IO a -> StateT ProgramState IO a
 io = liftIO
-
-----------------------
---
-data Token = PLUS | MINUS | GT' | LT' | COMMA | DOT | BRACKET_OPEN | BRACKET_CLOSE deriving (Show)
-
-type TokenList = [Token]
-
-tokenForChar :: Char -> Either ParseError Token
-tokenForChar '+' = Right PLUS
-tokenForChar '-' = Right MINUS
-tokenForChar '>' = Right GT'
-tokenForChar '<' = Right LT'
-tokenForChar ',' = Right COMMA
-tokenForChar '.' = Right DOT
-tokenForChar '[' = Right BRACKET_OPEN
-tokenForChar ']' = Right BRACKET_CLOSE
-tokenForChar x = Left $ ParseError InvalidCharacter ("Could not parse character: " ++ [x])
-
-data ParseErrorCode = InvalidCharacter | MismatchingBrackets deriving (Show)
-
-data ParseError = ParseError
-  { code :: ParseErrorCode,
-    message :: String
-  }
-  deriving (Show)
-
-lexer :: String -> Either ParseError TokenList
-lexer str =
-  case partitionEithers result of
-    ([], lst) -> Right lst
-    (x : xs, _) -> Left x
-  where
-    result = [tokenForChar c | c <- str]
-
-data ParseState = ParseState
-  { tokenList :: TokenList,
-    current :: [Stmt],
-    stack :: [[Stmt]]
-  }
-  deriving (Show)
-
-popToken :: State ParseState Token
-popToken = do
-  st <- get
-  state f
-  where
-    f s = (headToken tokenList', ParseState (tokenListTail tokenList') (current s) (stack s))
-      where
-        tokenList' = tokenList s
-        headToken (x : xs) = x
-        tokenListTail = drop 1
-
-parse :: State ParseState ()
-parse = do
-  tk <- popToken
-  return ()
-
---case tokenList st of
---  (x:xs) ->
---case x of
---  PLUS -> (++) <$> Right [Increment] <*> parse' xs
---  MINUS -> (++) <$> Right [Decrement] <*> parse' xs
---  GT' -> (++) <$> Right [MoveRight] <*> parse' xs
---  LT' -> (++) <$> Right [MoveLeft] <*> parse' xs
---  COMMA -> (++) <$> Right [CharIn] <*> parse' xs
---  DOT -> (++) <$> Right [CharOut] <*> parse' xs
---  BRACKET_OPEN -> (++) <$> Right [Loop []] <*> parse (ParseState (levelCount st) + 1) xs
---  BRACKET_CLOSE -> Left $ ParseError MismatchingBrackets "Mismatching brackets."
---where
---  parse' = parse st
-
---main :: IO ()
---main = do
---  let x = lexer "++>[]]+"
---  case x of
---    Right lx -> print $ parse lx (ParseState 0)
---    Left err -> print err
-main = do
-  let x = lexer "++>[]]+"
-  case x of
-    Right lx -> print $ runState parse (ParseState lx [] [])
-    Left err -> print err
