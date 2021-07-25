@@ -1,12 +1,11 @@
--- Use efficient data structure for tape
--- Improve main loop
--- Refactor / simplify
--- Implement loops
--- Implement debugger
--- Implement CLI
--- Implement compiler
--- Implement tests
+-- Infinite tape
 -- CI/CD
+-- handle spaces/comment
+-- fix loop initial condition
+-- Implement tests
+-- Implement CLI
+-- Implement debugger
+-- Implement compiler
 {-# LANGUAGE TupleSections #-}
 
 module Main where

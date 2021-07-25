@@ -17,7 +17,7 @@ terminal = choice [plus, minus, gt, lt, comma, dot, loop]
     lt = charStmt '<' MoveLeft
     comma = charStmt ',' CharIn
     dot = charStmt '.' CharOut
-    loop = between (char '[') (char ']') (many terminal) >>= \stmts -> return $ Loop stmts
+    loop = Loop <$> between (char '[') (char ']') (many terminal)
 
 parseStmtSeq :: Parsec String () [Stmt]
 parseStmtSeq = many terminal
