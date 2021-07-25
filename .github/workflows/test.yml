@@ -2,14 +2,21 @@ on: [push]
 name: test
 jobs:
   test:
-    name: Hello World
-    runs-on: ubuntu-latest # or macOS-latest, or windows-latest
+    name: Run tests
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1
         with:
-          ghc-version: "8.10.4" # Exact version of ghc to use
-          # cabal-version: 'latest'. Omitted, but defaults to 'latest'
+          ghc-version: "8.10.4"
           enable-stack: true
           stack-version: "latest"
       - run: stack test
+
+      - name: Generate coverage report
+        uses: 8c6794b6/hpc-codecov-action@v2
+        with:
+          target: stack:hsbf-test
+
+      - name: Send coverage report
+        uses: codecov/codecov-action@v1

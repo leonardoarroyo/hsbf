@@ -1,10 +1,8 @@
-name: hstest
+name: hsbf
 version: 0.1.0.0
-github: "githubuser/hstest"
+github: "leonardoarroyo/hsbf"
 license: BSD3
-author: "Author name here"
-maintainer: "example@example.com"
-copyright: "2021 Author name here"
+author: "Leonardo Arroyo"
 
 extra-source-files:
   - README.md
@@ -17,7 +15,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description: Please see the README on GitHub at <https://github.com/githubuser/hstest#readme>
+description: Please see the README on GitHub at <https://github.com/githubuser/hsbf#readme>
 
 dependencies:
   - base >= 4.7 && < 5
@@ -29,12 +27,17 @@ dependencies:
   - array
   - monad-loops
   - parsec
+  - HUnit
+  - smallcheck
+  - tasty
+  - tasty-hunit
+  - tasty-smallcheck
 
 library:
   source-dirs: src
 
 executables:
-  hstest-exe:
+  hsbf-exe:
     main: Main.hs
     source-dirs: app
     ghc-options:
@@ -42,7 +45,7 @@ executables:
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - hstest
+      - hsbf
       - mtl
       - containers
       - lens
@@ -53,12 +56,18 @@ executables:
       - parsec
 
 tests:
-  hstest-test:
+  hsbf-test:
     main: Spec.hs
     source-dirs: test
+    hs-source-dirs: src test
     ghc-options:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - hstest
+      - hsbf
+      - HUnit
+      - smallcheck
+      - tasty
+      - tasty-hunit
+      - tasty-smallcheck

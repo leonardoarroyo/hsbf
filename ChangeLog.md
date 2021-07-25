@@ -1,3 +1,3 @@
-# Changelog for hstest
+# Changelog for hsbf
 
 ## Unreleased changes
