@@ -11,6 +11,7 @@ import Control.Monad.State
     State,
     StateT,
     modify,
+    put,
   )
 import Data.Char (ord)
 import qualified Data.Map as M
@@ -22,7 +23,6 @@ import Text.Parsec (parse)
 
 data Status = Running | Exited deriving (Eq)
 
---type Tape = [Word8]
 type Tape = M.Map Int Word8
 
 data ProgramState = ProgramState
@@ -35,22 +35,14 @@ data ProgramState = ProgramState
 
 type ProgramStateM = State ProgramState
 
---newTape :: Tape
---newTape = replicate 100 0
 newTape :: M.Map Int Word8
 newTape = M.empty
 
 newProgram :: [Stmt] -> ProgramState
 newProgram program = ProgramState newTape 0 program []
 
---putTapeCell :: Tape -> Int -> Word8 -> Tape
---putTapeCell tape ptr value = tape & element ptr .~ value
-
 putTapeCell :: Tape -> Int -> Word8 -> Tape
 putTapeCell tape ptr value = M.insert ptr value tape
-
---getCell :: ProgramState -> Word8
---getCell st = tape st !! ptr st
 
 getCell :: ProgramState -> Word8
 getCell st = fromMaybe 0 (M.lookup (ptr st) (tape st))
@@ -89,8 +81,6 @@ popStack st = st {prog = head' (prog_stack st), prog_stack = drop 1 (prog_stack 
     head' (x : xs) = x
     head' [] = []
 
-------------------
-
 modifyCell :: (Word8 -> Word8) -> StateT ProgramState IO Status
 modifyCell fn = state $ continue . updateCell fn
 
@@ -111,19 +101,22 @@ charIn = do
 popInstruction :: StateT ProgramState IO Stmt
 popInstruction = state $ \s -> (headStatement (prog s), consumeProg s)
 
-restoreLoopIfNotZero :: [Stmt] -> ProgramState -> ProgramState
-restoreLoopIfNotZero stmts st
+ifNotZero :: (ProgramState -> ProgramState) -> ProgramState -> ProgramState
+ifNotZero fn st
   | cellIsZero st = st
-  | otherwise = restoreLoop stmts st
+  | otherwise = fn st
+
+runIfNotZero :: ProgramState -> StateT ProgramState IO Status
+runIfNotZero st
+  | cellIsZero st = return Running
+  | otherwise = iterateWhile (== Running) popAndRun
 
 loop :: [Stmt] -> StateT ProgramState IO ()
-loop stmts = do
-  start
-  iterateWhile (== Running) popAndRun
-  end
+loop stmts = start >> run >> end
   where
-    start = modify $ loadProgram stmts . stackProgram
-    end = modify $ restoreLoopIfNotZero stmts . popStack
+    start = modify $ ifNotZero (loadProgram stmts) . stackProgram
+    run = get >>= runIfNotZero
+    end = modify $ ifNotZero (restoreLoop stmts) . popStack
 
 exit :: StateT ProgramState IO Status
 exit = state (Exited,)

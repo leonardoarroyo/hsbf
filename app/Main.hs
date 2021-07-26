@@ -1,8 +1,7 @@
--- Infinite tape
--- CI/CD
 -- handle spaces/comment
 -- fix loop initial condition
 -- Implement tests
+-- CI/CD
 -- Implement CLI
 -- Implement debugger
 -- Implement compiler
@@ -23,9 +22,12 @@ import Text.Parsec (parse)
 main :: IO ()
 main = do
   hSetBuffering stdin NoBuffering
+  hSetBuffering stdout NoBuffering
   case parse parseStmtSeq "unknown" prog of
     Right stmts -> void (runStateT runProgram (newProgram stmts))
     Left err -> print "a"
   where
-    --prog = ",+[-.,+]"
     prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."
+
+--prog = ",+[-.,+]"
+--prog = "[,>]"
