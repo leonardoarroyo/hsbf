@@ -23,10 +23,11 @@ main = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   case parse parseStmtSeq "unknown" prog of
-    Right stmts -> void (runStateT runProgram (newProgram stmts))
+    Right stmts -> void (runStateT run (newProgram stmts))
     Left err -> print "a"
   where
-    --prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."
-    prog = "[,>]"
+    prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."
+
+--prog = "[,>]"
 
 --prog = ",+[-.,+]"

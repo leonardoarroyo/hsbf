@@ -12,12 +12,12 @@ import Control.Monad.State
     StateT,
     modify,
     put,
+    void,
   )
-import Data.Char (ord)
+import Data.Char (chr, ord)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8)
-import Lib (showByte)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
 
@@ -33,7 +33,10 @@ data ProgramState = ProgramState
   }
   deriving (Show, Eq)
 
-type ProgramStateM = State ProgramState
+type ProgramStateT = StateT ProgramState IO
+
+showByte :: Word8 -> String
+showByte x = [chr (read $ show x :: Int)]
 
 newTape :: M.Map Int Word8
 newTape = M.empty
@@ -81,24 +84,21 @@ popStack st = st {prog = head' (prog_stack st), prog_stack = drop 1 (prog_stack 
     head' (x : xs) = x
     head' [] = []
 
-modifyCell :: (Word8 -> Word8) -> StateT ProgramState IO Status
+--------------
+
+modifyCell :: (Word8 -> Word8) -> ProgramStateT Status
 modifyCell fn = state $ continue . updateCell fn
 
-movePtr :: (Int -> Int) -> StateT ProgramState IO Status
+movePtr :: (Int -> Int) -> ProgramStateT Status
 movePtr fn = state $ continue . updatePtr fn
 
-charOut :: StateT ProgramState IO Status
-charOut = do
-  st <- get
-  liftIO $ putStr $ showByte $ getCell st
-  state (Running,)
+charOut :: ProgramStateT Status
+charOut = get >>= (liftIO . putStr . showByte . getCell) >> state (Running,)
 
-charIn :: StateT ProgramState IO Status
-charIn = do
-  char <- liftIO getChar
-  modifyCell $ const $ fromIntegral $ ord char
+charIn :: ProgramStateT Status
+charIn = liftIO getChar >>= modifyCell . const . fromIntegral . ord
 
-popInstruction :: StateT ProgramState IO Stmt
+popInstruction :: ProgramStateT Stmt
 popInstruction = state $ \s -> (headStatement (prog s), consumeProg s)
 
 ifNotZero :: (ProgramState -> ProgramState) -> ProgramState -> ProgramState
@@ -106,22 +106,22 @@ ifNotZero fn st
   | cellIsZero st = st
   | otherwise = fn st
 
-runIfNotZero :: ProgramState -> StateT ProgramState IO Status
+runIfNotZero :: ProgramState -> ProgramStateT Status
 runIfNotZero st
   | cellIsZero st = return Running
-  | otherwise = iterateWhile (== Running) popAndRun
+  | otherwise = run
 
-loop :: [Stmt] -> StateT ProgramState IO ()
+loop :: [Stmt] -> ProgramStateT ()
 loop stmts = start >> run >> end
   where
     start = modify $ ifNotZero (loadProgram stmts) . stackProgram
     run = get >>= runIfNotZero
     end = modify $ ifNotZero (restoreLoop stmts) . popStack
 
-exit :: StateT ProgramState IO Status
+exit :: ProgramStateT Status
 exit = state (Exited,)
 
-executeStatement :: Stmt -> StateT ProgramState IO Status
+executeStatement :: Stmt -> ProgramStateT Status
 executeStatement stmt = case stmt of
   MoveRight -> movePtr (+ 1)
   MoveLeft -> movePtr $ flip (-) 1
@@ -132,10 +132,8 @@ executeStatement stmt = case stmt of
   Loop stmts -> loop stmts >> return Running
   Exit -> exit
 
-popAndRun :: StateT ProgramState IO Status
+popAndRun :: ProgramStateT Status
 popAndRun = popInstruction >>= executeStatement
 
-runProgram :: StateT ProgramState IO ()
-runProgram = do
-  iterateWhile (== Running) popAndRun
-  return ()
+run :: ProgramStateT Status
+run = iterateWhile (== Running) popAndRun
