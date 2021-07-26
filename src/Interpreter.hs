@@ -2,7 +2,7 @@
 
 module Interpreter where
 
-import Ast (Stmt (..), Stmt2 (..))
+import Ast (Stmt (..))
 import Control.Lens (element, (&), (.~))
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.State

@@ -1,8 +1,7 @@
 -- handle spaces/comment
--- fix loop initial condition
+-- Implement CLI
 -- Implement tests
 -- CI/CD
--- Implement CLI
 -- Implement debugger
 -- Implement compiler
 {-# LANGUAGE TupleSections #-}
@@ -27,7 +26,7 @@ main = do
     Right stmts -> void (runStateT runProgram (newProgram stmts))
     Left err -> print "a"
   where
-    prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."
+    --prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."
+    prog = "[,>]"
 
 --prog = ",+[-.,+]"
---prog = "[,>]"
