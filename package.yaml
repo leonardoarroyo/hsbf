@@ -29,9 +29,11 @@ dependencies:
   - parsec
   - HUnit
   - smallcheck
+  - QuickCheck
   - tasty
   - tasty-hunit
   - tasty-smallcheck
+  - tasty-quickcheck
 
 library:
   source-dirs: src
@@ -68,6 +70,8 @@ tests:
       - hsbf
       - HUnit
       - smallcheck
+      - QuickCheck
       - tasty
       - tasty-hunit
       - tasty-smallcheck
+      - tasty-quickcheck

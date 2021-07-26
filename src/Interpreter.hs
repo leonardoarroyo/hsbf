@@ -2,7 +2,7 @@
 
 module Interpreter where
 
-import Ast (Stmt (..))
+import Ast (Stmt (..), Stmt2 (..))
 import Control.Lens (element, (&), (.~))
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.State
@@ -31,7 +31,7 @@ data ProgramState = ProgramState
 type ProgramStateM = State ProgramState
 
 newProgram :: [Stmt] -> ProgramState
-newProgram program = ProgramState [0 | i <- [0 .. 100]] 0 program []
+newProgram program = ProgramState (replicate 100 0) 0 program []
 
 getCell :: ProgramState -> Word8
 getCell st = tape st !! ptr st
@@ -39,8 +39,8 @@ getCell st = tape st !! ptr st
 cellIsZero :: ProgramState -> Bool
 cellIsZero = (==) 0 . getCell
 
-continue :: b -> (Status, b)
-continue x = (Running, x)
+continue :: ProgramState -> (Status, ProgramState)
+continue = (Running,)
 
 putTapeCell :: [Word8] -> Int -> Word8 -> [Word8]
 putTapeCell tape ptr value = tape & element ptr .~ value
@@ -57,6 +57,10 @@ consumeProg s = s {prog = tail (prog s)}
 headStatement :: [Stmt] -> Stmt
 headStatement (x : xs) = x
 headStatement [] = Exit
+
+headStatement2 :: [Stmt2] -> Stmt2
+headStatement2 (x : xs) = x
+headStatement2 [] = Exit2
 
 loadProgram :: [Stmt] -> ProgramState -> ProgramState
 loadProgram stmts st = st {prog = stmts}
