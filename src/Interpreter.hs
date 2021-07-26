@@ -13,6 +13,8 @@ import Control.Monad.State
     modify,
   )
 import Data.Char (ord)
+import qualified Data.Map as M
+import Data.Maybe (fromMaybe)
 import Data.Word (Word8)
 import Lib (showByte)
 import System.Random (StdGen, getStdGen, randomR)
@@ -20,8 +22,11 @@ import Text.Parsec (parse)
 
 data Status = Running | Exited deriving (Eq)
 
+--type Tape = [Word8]
+type Tape = M.Map Int Word8
+
 data ProgramState = ProgramState
-  { tape :: [Word8],
+  { tape :: Tape,
     ptr :: Int,
     prog :: [Stmt],
     prog_stack :: [[Stmt]]
@@ -30,20 +35,31 @@ data ProgramState = ProgramState
 
 type ProgramStateM = State ProgramState
 
+--newTape :: Tape
+--newTape = replicate 100 0
+newTape :: M.Map Int Word8
+newTape = M.empty
+
 newProgram :: [Stmt] -> ProgramState
-newProgram program = ProgramState (replicate 100 0) 0 program []
+newProgram program = ProgramState newTape 0 program []
+
+--putTapeCell :: Tape -> Int -> Word8 -> Tape
+--putTapeCell tape ptr value = tape & element ptr .~ value
+
+putTapeCell :: Tape -> Int -> Word8 -> Tape
+putTapeCell tape ptr value = M.insert ptr value tape
+
+--getCell :: ProgramState -> Word8
+--getCell st = tape st !! ptr st
 
 getCell :: ProgramState -> Word8
-getCell st = tape st !! ptr st
+getCell st = fromMaybe 0 (M.lookup (ptr st) (tape st))
 
 cellIsZero :: ProgramState -> Bool
 cellIsZero = (==) 0 . getCell
 
 continue :: ProgramState -> (Status, ProgramState)
 continue = (Running,)
-
-putTapeCell :: [Word8] -> Int -> Word8 -> [Word8]
-putTapeCell tape ptr value = tape & element ptr .~ value
 
 updateCell :: (Word8 -> Word8) -> ProgramState -> ProgramState
 updateCell fn s = s {tape = putTapeCell (tape s) (ptr s) (fn (getCell s))}
@@ -57,10 +73,6 @@ consumeProg s = s {prog = tail (prog s)}
 headStatement :: [Stmt] -> Stmt
 headStatement (x : xs) = x
 headStatement [] = Exit
-
-headStatement2 :: [Stmt2] -> Stmt2
-headStatement2 (x : xs) = x
-headStatement2 [] = Exit2
 
 loadProgram :: [Stmt] -> ProgramState -> ProgramState
 loadProgram stmts st = st {prog = stmts}

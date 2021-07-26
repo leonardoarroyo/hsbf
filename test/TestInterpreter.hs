@@ -23,6 +23,16 @@ interpreterUnitTests =
   testGroup
     "Interpreter"
     [ testGroup
+        "newProgram"
+        [ QC.testProperty "newProgram x == ProgramState newTape 0 x []" $
+            \x -> newProgram x == ProgramState newTape 0 x []
+        ],
+      testGroup
+        "newTape"
+        [ testCase "newTape == replicate 100 0" $
+            newTape @?= replicate 100 0
+        ],
+      testGroup
         "headStatement"
         [ QC.testProperty
             "headStatement x == head x when x is not empty"
@@ -31,11 +41,11 @@ interpreterUnitTests =
             "headStatement [] == Exit"
             $ headStatement [] @?= Exit
         ],
-      testGroup
-        "newProgram"
-        [ QC.testProperty "newProgram x == ProgramState (replicate 100 0) 0 x []" $
-            \x -> newProgram x == ProgramState (replicate 100 0) 0 x []
-        ]
+      --testGroup
+      --  "putTapeCell"
+      --  [ QC.testProperty "(putTapeCell tape ptr value) !! ptr == value" $
+      --      \x -> newProgram x == ProgramState (replicate 100 0) 0 x []
+      --  ]
     ]
 
 instance Arbitrary Stmt where
