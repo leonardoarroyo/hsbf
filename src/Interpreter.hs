@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 
 module Interpreter where
@@ -25,11 +26,13 @@ data Status = Running | Exited deriving (Eq)
 
 type Tape = M.Map Int Word8
 
+type Prog = [Stmt]
+
 data ProgramState = ProgramState
   { tape :: Tape,
     ptr :: Int,
-    prog :: [Stmt],
-    prog_stack :: [[Stmt]]
+    prog :: Prog,
+    progStack :: [Prog]
   }
   deriving (Show, Eq)
 
@@ -41,14 +44,14 @@ showByte x = [chr (read $ show x :: Int)]
 newTape :: M.Map Int Word8
 newTape = M.empty
 
-newProgram :: [Stmt] -> ProgramState
+newProgram :: Prog -> ProgramState
 newProgram program = ProgramState newTape 0 program []
 
 putTapeCell :: Tape -> Int -> Word8 -> Tape
 putTapeCell tape ptr value = M.insert ptr value tape
 
 getCell :: ProgramState -> Word8
-getCell st = fromMaybe 0 (M.lookup (ptr st) (tape st))
+getCell s = fromMaybe 0 (M.lookup (ptr s) (tape s))
 
 cellIsZero :: ProgramState -> Bool
 cellIsZero = (==) 0 . getCell
@@ -65,21 +68,21 @@ updatePtr fn s = s {ptr = fn (ptr s)}
 consumeProg :: ProgramState -> ProgramState
 consumeProg s = s {prog = tail (prog s)}
 
-headStatement :: [Stmt] -> Stmt
+headStatement :: Prog -> Stmt
 headStatement (x : xs) = x
 headStatement [] = Exit
 
-loadProgram :: [Stmt] -> ProgramState -> ProgramState
-loadProgram stmts st = st {prog = stmts}
+loadProgram :: Prog -> ProgramState -> ProgramState
+loadProgram stmts s = s {prog = stmts}
 
 stackProgram :: ProgramState -> ProgramState
-stackProgram st = st {prog = [], prog_stack = prog st : prog_stack st}
+stackProgram s = s {prog = [], progStack = prog s : progStack s}
 
-restoreLoop :: [Stmt] -> ProgramState -> ProgramState
-restoreLoop stmts st = st {prog = Loop stmts : prog st}
+restoreLoop :: Prog -> ProgramState -> ProgramState
+restoreLoop stmts s = s {prog = Loop stmts : prog s}
 
 popStack :: ProgramState -> ProgramState
-popStack st = st {prog = head' (prog_stack st), prog_stack = drop 1 (prog_stack st)}
+popStack s = s {prog = head' (progStack s), progStack = drop 1 (progStack s)}
   where
     head' (x : xs) = x
     head' [] = []
@@ -93,47 +96,47 @@ movePtr :: (Int -> Int) -> ProgramStateT Status
 movePtr fn = state $ continue . updatePtr fn
 
 charOut :: ProgramStateT Status
-charOut = get >>= (liftIO . putStr . showByte . getCell) >> state (Running,)
+charOut = get >>= (liftIO . putStr . showByte . getCell) >> return Running
 
 charIn :: ProgramStateT Status
 charIn = liftIO getChar >>= modifyCell . const . fromIntegral . ord
 
-popInstruction :: ProgramStateT Stmt
-popInstruction = state $ \s -> (headStatement (prog s), consumeProg s)
+popStmt :: ProgramStateT Stmt
+popStmt = state $ \s -> (headStatement (prog s), consumeProg s)
 
 ifNotZero :: (ProgramState -> ProgramState) -> ProgramState -> ProgramState
-ifNotZero fn st
-  | cellIsZero st = st
-  | otherwise = fn st
+ifNotZero fn s
+  | cellIsZero s = s
+  | otherwise = fn s
 
 runIfNotZero :: ProgramState -> ProgramStateT Status
-runIfNotZero st
-  | cellIsZero st = return Running
+runIfNotZero s
+  | cellIsZero s = return Running
   | otherwise = run
 
-loop :: [Stmt] -> ProgramStateT ()
+loop :: Prog -> ProgramStateT Status
 loop stmts = start >> run >> end
   where
     start = modify $ ifNotZero (loadProgram stmts) . stackProgram
     run = get >>= runIfNotZero
-    end = modify $ ifNotZero (restoreLoop stmts) . popStack
+    end = state $ continue . ifNotZero (restoreLoop stmts) . popStack
 
 exit :: ProgramStateT Status
 exit = state (Exited,)
 
-executeStatement :: Stmt -> ProgramStateT Status
-executeStatement stmt = case stmt of
+executeStmt :: Stmt -> ProgramStateT Status
+executeStmt = \case
   MoveRight -> movePtr (+ 1)
   MoveLeft -> movePtr $ flip (-) 1
   Increment -> modifyCell (+ 1)
   Decrement -> modifyCell $ flip (-) 1
   CharIn -> charIn
   CharOut -> charOut
-  Loop stmts -> loop stmts >> return Running
+  Loop stmts -> loop stmts
   Exit -> exit
 
 popAndRun :: ProgramStateT Status
-popAndRun = popInstruction >>= executeStatement
+popAndRun = popStmt >>= executeStmt
 
 run :: ProgramStateT Status
 run = iterateWhile (== Running) popAndRun
