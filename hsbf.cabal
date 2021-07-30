@@ -36,6 +36,7 @@ library
     , QuickCheck
     , array
     , base >=4.7 && <5
+    , cond
     , containers
     , deepseq
     , lens
@@ -62,6 +63,7 @@ executable hsbf-exe
     , QuickCheck
     , array
     , base >=4.7 && <5
+    , cond
     , containers
     , deepseq
     , hsbf
@@ -91,6 +93,7 @@ test-suite hsbf-test
     , QuickCheck
     , array
     , base >=4.7 && <5
+    , cond
     , containers
     , deepseq
     , hsbf

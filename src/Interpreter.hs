@@ -4,6 +4,7 @@
 module Interpreter where
 
 import Ast (Stmt (..))
+import Control.Conditional (if', select)
 import Control.Lens (element, (&), (.~))
 import Control.Monad.Loops (iterateWhile)
 import Control.Monad.State
@@ -104,22 +105,19 @@ charIn = liftIO getChar >>= modifyCell . const . fromIntegral . ord
 popStmt :: ProgramStateT Stmt
 popStmt = state $ \s -> (headStatement (prog s), consumeProg s)
 
-ifNotZero :: (ProgramState -> ProgramState) -> ProgramState -> ProgramState
-ifNotZero fn s
-  | cellIsZero s = s
-  | otherwise = fn s
-
 runIfNotZero :: ProgramState -> ProgramStateT Status
 runIfNotZero s
   | cellIsZero s = return Running
   | otherwise = run
 
 loop :: Prog -> ProgramStateT Status
-loop stmts = start >> run >> end
+loop stmts = start >> eval >> end
   where
-    start = modify $ ifNotZero (loadProgram stmts) . stackProgram
-    run = get >>= runIfNotZero
-    end = state $ continue . ifNotZero (restoreLoop stmts) . popStack
+    onlyIfNotZero = select cellIsZero id
+    runIfNotZero s = if' (cellIsZero s) (return Running) run
+    start = modify $ onlyIfNotZero (loadProgram stmts) . stackProgram
+    eval = get >>= runIfNotZero
+    end = state $ continue . onlyIfNotZero (restoreLoop stmts) . popStack
 
 exit :: ProgramStateT Status
 exit = state (Exited,)

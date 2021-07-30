@@ -34,6 +34,7 @@ dependencies:
   - tasty-hunit
   - tasty-smallcheck
   - tasty-quickcheck
+  - cond
 
 library:
   source-dirs: src
@@ -56,6 +57,7 @@ executables:
       - array
       - monad-loops
       - parsec
+      - cond
 
 tests:
   hsbf-test:
