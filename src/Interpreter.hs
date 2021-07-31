@@ -25,7 +25,9 @@ import Text.Parsec (parse)
 
 data Status = Running | Exited deriving (Eq)
 
-type Tape = M.Map Int Word8
+type Cell = Word8
+
+type Tape = M.Map Int Cell
 
 type Prog = [Stmt]
 
@@ -39,19 +41,19 @@ data ProgramState = ProgramState
 
 type ProgramStateT = StateT ProgramState IO
 
-showByte :: Word8 -> String
+showByte :: Cell -> String
 showByte x = [chr (read $ show x :: Int)]
 
-newTape :: M.Map Int Word8
+newTape :: M.Map Int Cell
 newTape = M.empty
 
 newProgram :: Prog -> ProgramState
 newProgram program = ProgramState newTape 0 program []
 
-putTapeCell :: Tape -> Int -> Word8 -> Tape
+putTapeCell :: Tape -> Int -> Cell -> Tape
 putTapeCell tape ptr value = M.insert ptr value tape
 
-getCell :: ProgramState -> Word8
+getCell :: ProgramState -> Cell
 getCell s = fromMaybe 0 (M.lookup (ptr s) (tape s))
 
 cellIsZero :: ProgramState -> Bool
@@ -60,7 +62,7 @@ cellIsZero = (==) 0 . getCell
 continue :: ProgramState -> (Status, ProgramState)
 continue = (Running,)
 
-updateCell :: (Word8 -> Word8) -> ProgramState -> ProgramState
+updateCell :: (Cell -> Cell) -> ProgramState -> ProgramState
 updateCell fn s = s {tape = putTapeCell (tape s) (ptr s) (fn (getCell s))}
 
 updatePtr :: (Int -> Int) -> ProgramState -> ProgramState
@@ -88,9 +90,7 @@ popStack s = s {prog = head' (progStack s), progStack = drop 1 (progStack s)}
     head' (x : xs) = x
     head' [] = []
 
---------------
-
-modifyCell :: (Word8 -> Word8) -> ProgramStateT Status
+modifyCell :: (Cell -> Cell) -> ProgramStateT Status
 modifyCell fn = state $ continue . updateCell fn
 
 movePtr :: (Int -> Int) -> ProgramStateT Status

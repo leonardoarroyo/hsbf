@@ -56,7 +56,7 @@ library
     , tasty-smallcheck
   default-language: Haskell2010
 
-executable hsbf-exe
+executable hsbf
   main-is: Main.hs
   other-modules:
       Paths_hsbf

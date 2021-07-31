@@ -43,7 +43,7 @@ library:
   source-dirs: src
 
 executables:
-  hsbf-exe:
+  hsbf:
     main: Main.hs
     source-dirs: app
     ghc-options:
