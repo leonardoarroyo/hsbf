@@ -11,4 +11,5 @@ data Stmt
   | CharOut
   | Loop [Stmt]
   | Exit
+  | Noop
   deriving (Show, Eq)

@@ -16,15 +16,14 @@ import Control.Monad.State
 import Interpreter
 import Parser
 import System.IO
-import Text.Parsec (parse)
 
 main :: IO ()
 main = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
-  case parse parseStmtSeq "unknown" prog of
+  case parseProgram "unknown" prog of
     Right stmts -> void (runStateT run (newProgram stmts))
-    Left err -> print "a"
+    Left err -> print err
   where
     prog = "++++++++[>++++[>++>+++>+++>+<<<<-]>+>->+>>+[<]<-]>>.>>---.+++++++..+++.>.<<-.>.+++.------.--------.>+.>++."
 

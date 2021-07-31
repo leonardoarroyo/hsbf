@@ -76,3 +76,4 @@ instance Arbitrary Stmt where
 --  i <- choose (0, n)
 --  j <- choose (0, n)
 --  return ((x : xs), i, j) -- return a non-empty list
+--  test noops inside loops

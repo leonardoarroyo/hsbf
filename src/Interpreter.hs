@@ -105,11 +105,6 @@ charIn = liftIO getChar >>= modifyCell . const . fromIntegral . ord
 popStmt :: ProgramStateT Stmt
 popStmt = state $ \s -> (headStatement (prog s), consumeProg s)
 
-runIfNotZero :: ProgramState -> ProgramStateT Status
-runIfNotZero s
-  | cellIsZero s = return Running
-  | otherwise = run
-
 loop :: Prog -> ProgramStateT Status
 loop stmts = start >> eval >> end
   where
@@ -132,6 +127,7 @@ executeStmt = \case
   CharOut -> charOut
   Loop stmts -> loop stmts
   Exit -> exit
+  Noop -> return Running
 
 popAndRun :: ProgramStateT Status
 popAndRun = popStmt >>= executeStmt
