@@ -35,6 +35,9 @@ dependencies:
   - tasty-smallcheck
   - tasty-quickcheck
   - cond
+  - optparse-applicative
+  - directory
+  - paths
 
 library:
   source-dirs: src
@@ -58,12 +61,14 @@ executables:
       - monad-loops
       - parsec
       - cond
+      - optparse-applicative
+      - paths
+      - directory
 
 tests:
   hsbf-test:
     main: Spec.hs
     source-dirs: test
-    hs-source-dirs: src test
     ghc-options:
       - -threaded
       - -rtsopts

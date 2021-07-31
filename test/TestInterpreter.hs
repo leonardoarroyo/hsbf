@@ -40,12 +40,12 @@ interpreterUnitTests =
           testCase
             "headStatement [] == Exit"
             $ headStatement [] @?= Exit
-        ],
-      --testGroup
-      --  "putTapeCell"
-      --  [ QC.testProperty "(putTapeCell tape ptr value) !! ptr == value" $
-      --      \x -> newProgram x == ProgramState (replicate 100 0) 0 x []
-      --  ]
+        ]
+        --testGroup
+        --  "putTapeCell"
+        --  [ QC.testProperty "(putTapeCell tape ptr value) !! ptr == value" $
+        --      \x -> newProgram x == ProgramState (replicate 100 0) 0 x []
+        --  ]
     ]
 
 instance Arbitrary Stmt where
