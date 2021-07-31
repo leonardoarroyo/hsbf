@@ -17,6 +17,7 @@ Available options:
 
 ## Todo
 ----------
+* Refactor stuff
 * Allow for configurable bit width
 * Write tests
 * CI/CD

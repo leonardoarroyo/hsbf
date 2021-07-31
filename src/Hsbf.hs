@@ -32,14 +32,12 @@ failWithGeneric :: Show a => Either a b -> Either GenericError b
 failWithGeneric = either (Left . show) Right
 
 readSourceFile :: FilePath -> IO (Either GenericError String)
-readSourceFile path = failWithGeneric <$> eitherSourceCode
-  where
-    eitherSourceCode = try @IOException $ readFile path
+readSourceFile path = failWithGeneric <$> (try @IOException $ readFile path)
 
 runFile :: FilePath -> IO ()
 runFile path = do
-  contents <- readSourceFile path
-  either fatal void $ (contents >>= parse) <&> runStmts
+  source <- readSourceFile path
+  either fatal void $ (source >>= parse) <&> runStmts
   where
     fatal err = hPutStrLn stderr err >> exitWith (ExitFailure 1)
     runStmts stmts = void (runStateT run (newProgram stmts))
