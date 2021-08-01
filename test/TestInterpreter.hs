@@ -74,8 +74,33 @@ interpreterTests =
         "consumeProg"
         [ testProperty "consumeProg s drops (prog s) head" $
             \s -> consumeProg s == s {prog = tailSafe (prog s)}
+        ],
+      testGroup
+        "updatePtr"
+        [ testProperty "(updatePtr fn s) applies fn to cell at (ptr s) and return an updated ProgramState" $
+            forAll (arbitrary :: Gen (Int -> Int, ProgramState)) $
+              \(fn, s) -> updatePtr fn s == s {ptr = fn (ptr s)}
+        ],
+      testGroup
+        "continue"
+        [ testProperty "continue s == (Running, s)" $
+            \s -> continue s == (Running, s)
+        ],
+      testGroup
+        "loadProgram"
+        [ testProperty "(loadProgram stmts s) sets prog field on s to stmts" $
+            \(stmts, s) -> loadProgram stmts s == s {prog = stmts}
+        ],
+      testGroup
+        "cellIsZero"
+        [ testProperty "(cellIsZero s) == True when cell at ptr is 0" $
+            forAll (programStateWithTape newTape) $ \s -> cellIsZero s
+            --testProperty "(cellIsZero s) == False when cell at ptr is not 0" $
+            --  forAll (programStateWithTape newTape) $ \s -> cellIsZero s
         ]
     ]
   where
     programStateWithTape tape = ProgramState tape <$> arbitrary <*> arbitrary <*> arbitrary
     mirroredTape :: Tape = M.fromList [(x, fromIntegral x) | x <- [-15000 .. 15000]]
+
+--genNonZeroTape = M.fromList [(x, arbitrary :: Gen Word8) | x <- [-15000 .. 15000]]
