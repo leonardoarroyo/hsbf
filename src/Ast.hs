@@ -1,7 +1,5 @@
 module Ast where
 
-import GHC.Generics
-
 data Stmt
   = Increment
   | Decrement

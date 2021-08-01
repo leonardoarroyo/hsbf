@@ -40,7 +40,7 @@ runFile path = do
   either fatal void $ (source >>= parse) <&> runStmts
   where
     fatal err = hPutStrLn stderr err >> exitWith (ExitFailure 1)
-    runStmts stmts = void (runStateT run (newProgram stmts))
+    runStmts = void . runStateT run . newProgram
     parse program = failWithGeneric $ parseProgram path program
 
 hsbf :: Options -> IO ()
