@@ -49,6 +49,7 @@ library
     , parsec
     , paths
     , random
+    , safe
     , smallcheck
     , tasty
     , tasty-hunit
@@ -80,6 +81,7 @@ executable hsbf
     , parsec
     , paths
     , random
+    , safe
     , smallcheck
     , tasty
     , tasty-hunit
@@ -113,6 +115,7 @@ test-suite hsbf-test
     , parsec
     , paths
     , random
+    , safe
     , smallcheck
     , tasty
     , tasty-hunit

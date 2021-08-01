@@ -38,6 +38,7 @@ dependencies:
   - optparse-applicative
   - directory
   - paths
+  - safe
 
 library:
   source-dirs: src
@@ -64,6 +65,7 @@ executables:
       - optparse-applicative
       - paths
       - directory
+      - safe
 
 tests:
   hsbf-test:
@@ -82,3 +84,4 @@ tests:
       - tasty-hunit
       - tasty-smallcheck
       - tasty-quickcheck
+      - safe

@@ -20,6 +20,7 @@ import Data.Char (chr, ord)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8)
+import Safe (tailSafe)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
 
@@ -72,7 +73,7 @@ updatePtr :: (Int -> Int) -> ProgramState -> ProgramState
 updatePtr fn s = s {ptr = fn (ptr s)}
 
 consumeProg :: ProgramState -> ProgramState
-consumeProg s = s {prog = tail (prog s)}
+consumeProg s = s {prog = tailSafe (prog s)}
 
 headStatement :: Prog -> Stmt
 headStatement (x : xs) = x
