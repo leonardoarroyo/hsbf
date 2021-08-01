@@ -48,14 +48,28 @@ interpreterUnitTests =
         [ QC.testProperty "getTapeCell (putTapeCell tape ptr value) ptr == Just value"
             $ QC.forAll (arbitrary :: Gen (Int, Word8))
             $ \(ptr, val) -> getTapeCell (putTapeCell indexIsCellTape ptr val) ptr == Just val
+        ],
+      testGroup
+        "consumeProg"
+        [ QC.testProperty "consumeProg s drops (prog s) head"
+            $ QC.forAll (arbitrary :: Gen ProgramState)
+            $ \s -> consumeProg s == s {prog = tail (prog s)}
         ]
     ]
 
 indexIsCellTape :: Tape
 indexIsCellTape = M.fromList [(x, fromIntegral x) | x <- [-15000..15000]]
 
+instance Arbitrary ProgramState where
+  arbitrary = ProgramState <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 instance Arbitrary Stmt where
   arbitrary = elements [Increment, Decrement, MoveRight, MoveLeft, CharIn, CharOut]
+  
+genTape :: Gen Tape 
+genTape = arbitrary
+
+genPtr :: Gen Int
+genPtr = arbitrary
   
 --nonEmptyStmts :: Gen [Stmt]
 --nonEmptyStmts = resize 10 flexList
