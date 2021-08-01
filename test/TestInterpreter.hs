@@ -5,19 +5,17 @@
 
 module TestInterpreter where
 
+import qualified Data.Map as M
 import Ast
 import Data.List
+import Data.Maybe
 import Interpreter
 import Test.SmallCheck.Series
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.SmallCheck as SC
-
-prop_hSx_eq_hx x = headStatement x == head x
-
-prop_Myfunc :: [Int] -> (Int, Int) -> Bool
-prop_Myfunc ints (i, j) = ints !! i == ints !! j
+import Data.Word
 
 interpreterUnitTests =
   testGroup
@@ -28,11 +26,6 @@ interpreterUnitTests =
             \x -> newProgram x == ProgramState newTape 0 x []
         ],
       testGroup
-        "newTape"
-        [ testCase "newTape == replicate 100 0" $
-            newTape @?= replicate 100 0
-        ],
-      testGroup
         "headStatement"
         [ QC.testProperty
             "headStatement x == head x when x is not empty"
@@ -40,17 +33,30 @@ interpreterUnitTests =
           testCase
             "headStatement [] == Exit"
             $ headStatement [] @?= Exit
+        ],
+      testGroup
+        "getTapeCell"
+        [ QC.testProperty
+            "getTapeCell tape ptr returns Just element at index ptr when element is defined"
+            $ QC.forAll (arbitrary :: Gen Int) $ \x -> getTapeCell indexIsCellTape x == Just (fromIntegral x),
+          QC.testProperty
+            "getTapeCell tape ptr returns Nothing when index ptr is not defined"
+            $ QC.forAll (arbitrary :: Gen Int) $ \x -> isNothing (getTapeCell newTape x)
+        ],
+      testGroup
+        "putTapeCell"
+        [ QC.testProperty "getTapeCell (putTapeCell tape ptr value) ptr == Just value"
+            $ QC.forAll (arbitrary :: Gen (Int, Word8))
+            $ \(ptr, val) -> getTapeCell (putTapeCell indexIsCellTape ptr val) ptr == Just val
         ]
-        --testGroup
-        --  "putTapeCell"
-        --  [ QC.testProperty "(putTapeCell tape ptr value) !! ptr == value" $
-        --      \x -> newProgram x == ProgramState (replicate 100 0) 0 x []
-        --  ]
     ]
+
+indexIsCellTape :: Tape
+indexIsCellTape = M.fromList [(x, fromIntegral x) | x <- [-15000..15000]]
 
 instance Arbitrary Stmt where
   arbitrary = elements [Increment, Decrement, MoveRight, MoveLeft, CharIn, CharOut]
-
+  
 --nonEmptyStmts :: Gen [Stmt]
 --nonEmptyStmts = resize 10 flexList
 --

@@ -53,8 +53,11 @@ newProgram program = ProgramState newTape 0 program []
 putTapeCell :: Tape -> Int -> Cell -> Tape
 putTapeCell tape ptr value = M.insert ptr value tape
 
+getTapeCell :: Tape -> Int -> Maybe Cell
+getTapeCell tape ptr = M.lookup ptr tape
+
 getCell :: ProgramState -> Cell
-getCell s = fromMaybe 0 (M.lookup (ptr s) (tape s))
+getCell s = fromMaybe 0 (getTapeCell (tape s) (ptr s))
 
 cellIsZero :: ProgramState -> Bool
 cellIsZero = (==) 0 . getCell
