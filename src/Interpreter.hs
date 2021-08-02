@@ -20,7 +20,7 @@ import Data.Char (chr, ord)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8)
-import Safe (tailSafe)
+import Safe (headDef, tailSafe)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
 
@@ -89,10 +89,7 @@ restoreLoop :: Prog -> ProgramState -> ProgramState
 restoreLoop stmts s = s {prog = Loop stmts : prog s}
 
 popStack :: ProgramState -> ProgramState
-popStack s = s {prog = head' (progStack s), progStack = drop 1 (progStack s)}
-  where
-    head' (x : xs) = x
-    head' [] = []
+popStack s = s {prog = headDef [] (progStack s), progStack = drop 1 (progStack s)}
 
 modifyCell :: (Cell -> Cell) -> ProgramStateT Status
 modifyCell fn = state $ continue . updateCell fn

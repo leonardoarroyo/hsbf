@@ -2,11 +2,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module TestInterpreter where
 
 import Ast
 import Control.Arrow
+import Data.Bifunctor
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
@@ -58,7 +60,7 @@ interpreterTests =
       testGroup
         "putTapeCell"
         [ testProperty "getTapeCell (putTapeCell tape ptr value) ptr == Just value" $
-            forAll (arbitrary :: Gen (Int, Word8)) $
+            forAll (arbitrary :: Gen (Int, Cell)) $
               \(ptr, val) -> getTapeCell (putTapeCell mirroredTape ptr val) ptr == Just val
         ],
       testGroup
@@ -94,13 +96,38 @@ interpreterTests =
       testGroup
         "cellIsZero"
         [ testProperty "(cellIsZero s) == True when cell at ptr is 0" $
-            forAll (programStateWithTape newTape) $ \s -> cellIsZero s
-            --testProperty "(cellIsZero s) == False when cell at ptr is not 0" $
-            --  forAll (programStateWithTape newTape) $ \s -> cellIsZero s
+            forAll (programStateWithTape newTape) $ \s -> cellIsZero s,
+          testProperty "(cellIsZero s) == False when cell at ptr is not 0" $
+            forAll (nonZeroTape >>= programStateWithTape) $ \s -> not (cellIsZero s)
+        ],
+      testGroup
+        "updateCell"
+        [ testProperty "(updateCell fn s) applies fn to cell at (ptr s) and updates the value" $
+            \(fn, s) -> updateCell fn s == s {tape = M.insert (ptr s) (fn (getCell s)) (tape s)}
+        ],
+      testGroup
+        "stackProgram"
+        [ testProperty "(stackProgram s) moves current (prog s) to head of (progStack s) and sets (prog s) to []" $
+            \s -> stackProgram s == s {prog = [], progStack = prog s : progStack s}
+        ],
+      testGroup
+        "restoreLoop"
+        [ testProperty "(restoreLoop stmts s) puts a (Loop stmts) at head of (prog s)" $
+            \(stmts, s) -> restoreLoop stmts s == s {prog = Loop stmts : prog s}
+        ],
+      testGroup
+        "popStack"
+        [ testProperty "(popStack s) pops head of (progStack s) and puts it at (prog s) when (progStack s) is not empty" $
+            forAll (programStateWithStack (arbitrary `suchThat` (not . null))) $
+              \s -> popStack s == s {prog = head (progStack s), progStack = drop 1 (progStack s)},
+          testProperty "(popStack s) sets (prog s) to [] when (progStack s) == []" $
+            forAll (programStateWithStack (return [])) $
+              \s -> popStack s == s {prog = [], progStack = []}
         ]
     ]
   where
     programStateWithTape tape = ProgramState tape <$> arbitrary <*> arbitrary <*> arbitrary
+    programStateWithStack stack = ProgramState <$> arbitrary <*> arbitrary <*> arbitrary <*> stack
     mirroredTape :: Tape = M.fromList [(x, fromIntegral x) | x <- [-15000 .. 15000]]
-
---genNonZeroTape = M.fromList [(x, arbitrary :: Gen Word8) | x <- [-15000 .. 15000]]
+    nonZeroTape :: Gen Tape = M.fromList <$> sequence [nonZero >>= \y -> return (x, y) | x <- [-15000 .. 15000]]
+    nonZero :: Gen Cell = arbitrary `suchThat` (/= 0)
