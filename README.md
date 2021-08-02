@@ -1,8 +1,8 @@
 # hsbf
 ![build](https://github.com/leonardoarroyo/hsbf/actions/workflows/test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/leonardoarroyo/hsbf/branch/master/graph/badge.svg?token=D6I4MOV4US)](https://codecov.io/gh/leonardoarroyo/hsbf)
 ----
-![cons](https://i2.wp.com/www.bapl.org/wp-content/uploads/2019/02/old-under-construction-gif.gif)
-![cons2](https://upload.wikimedia.org/wikipedia/commons/1/19/Under_construction_graphic.gif)
+hsbf is a small brainfuck interpreter written in Haskell.
 
 ## Usage
 ----------
@@ -17,8 +17,7 @@ Available options:
 
 ## Todo
 ----------
-* Refactor stuff
-* Allow for configurable bit width
-* Write tests
-* CI/CD
-* Turn this into a debugger and compiler
+* Allow for configurable bit-width
+* Add tests
+* Create release workflow
+* Add debugging capabilities
