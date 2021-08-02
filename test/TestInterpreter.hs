@@ -35,7 +35,7 @@ interpreterTests =
   testGroup
     "Interpreter"
     [ testGroup
-        "newProgramiterateWhile"
+        "newProgram"
         [ testProperty "newProgram x == ProgramState newTape 0 x []" $
             \x -> newProgram x == ProgramState newTape 0 x []
         ],
