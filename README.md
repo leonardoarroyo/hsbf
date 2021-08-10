@@ -15,9 +15,14 @@ Available options:
   -h,--help                Show this help text
 ```
 
+## Status
+----------
+This project, although functional, is under active development.
+
 ## Todo
 ----------
-* Allow for configurable bit-width
-* Add tests
-* Create release workflow
+* Allow for configurable cell size(currently 8bit, interpreter should be able to handle 16, 32 and 64bit cells as well)
+* Improve test suite
+* Create build and release workflow
 * Add debugging capabilities
+* Maybe turn this into a compiler for fun
