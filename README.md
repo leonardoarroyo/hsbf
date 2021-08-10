@@ -5,7 +5,6 @@
 hsbf is a small brainfuck interpreter written in Haskell.
 
 ## Usage
-----------
 ```
 Usage: hsbf [-v|--version] [FILES]
   Interpret brainfuck source code for FILES
@@ -16,11 +15,9 @@ Available options:
 ```
 
 ## Status
-----------
-This project, although functional, is under active development.
+This project, although functional, is under active development. There's no release cycle defined, but one should be able to compile it with ease by running `stack build`.
 
 ## Todo
-----------
 * Allow for configurable cell size(currently 8bit, interpreter should be able to handle 16, 32 and 64bit cells as well)
 * Improve test suite
 * Create build and release workflow
