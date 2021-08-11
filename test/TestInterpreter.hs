@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -8,6 +9,8 @@ module TestInterpreter where
 
 import Ast
 import Control.Arrow
+import Control.Monad.Reader
+import Control.Monad.State (MonadTrans, StateT (StateT, runStateT))
 import Data.Bifunctor
 import Data.List
 import qualified Data.Map as M
@@ -30,10 +33,10 @@ instance Arbitrary Stmt where
         (1, Loop <$> scale (`div` 3) (listOf1 arbitrary))
       ]
 
-interpreterTests :: TestTree
-interpreterTests =
+interpreterUtilsTests :: TestTree
+interpreterUtilsTests =
   testGroup
-    "Interpreter"
+    "Interpreter utils"
     [ testGroup
         "newProgram"
         [ testProperty "newProgram x == ProgramState newTape 0 x []" $
@@ -131,3 +134,27 @@ interpreterTests =
     mirroredTape :: Tape = M.fromList [(x, fromIntegral x) | x <- [-15000 .. 15000]]
     nonZeroTape :: Gen Tape = M.fromList <$> sequence [nonZero >>= \y -> return (x, y) | x <- [-15000 .. 15000]]
     nonZero :: Gen Cell = arbitrary `suchThat` (/= 0)
+
+interpreterVMTests :: TestTree
+interpreterVMTests =
+  testGroup
+    "Interpreter VM"
+    [ testGroup
+        "When executing a single statement"
+        [ testCase
+            "MoveRight should increase ptr"
+            $ runStateT run (newProgram [MoveRight]) >>= (snd >>> ptr >>> (@?= 1)),
+          testCase
+            "MoveLeft should decrease ptr"
+            $ runStateT run (newProgram [MoveLeft]) >>= (snd >>> ptr >>> (@?= -1)),
+          testCase
+            "Increment should increase cell value under ptr"
+            $ runStateT run (newProgram [Increment]) >>= (snd >>> getCell >>> (@?= 1)),
+          testCase
+            "Decrement should decrease cell value under ptr"
+            $ runStateT run (newProgram [Decrement]) >>= (snd >>> getCell >>> (@?= ((-) 0 1 :: Cell))),
+          testCase
+            "Exit should return Exited status"
+            $ runStateT run (newProgram [Exit]) >>= (fst >>> (@?= Exited))
+        ]
+    ]

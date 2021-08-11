@@ -1,8 +1,8 @@
 import Test.Tasty
 import Test.Tasty.HUnit
-import TestInterpreter (interpreterTests)
+import TestInterpreter (interpreterUtilsTests, interpreterVMTests)
 
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [interpreterTests]
+tests = testGroup "Tests" [interpreterUtilsTests, interpreterVMTests]

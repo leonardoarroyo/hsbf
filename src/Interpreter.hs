@@ -24,7 +24,7 @@ import Safe (headDef, tailSafe)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
 
-data Status = Running | Exited deriving (Eq)
+data Status = Running | Exited deriving (Eq, Show)
 
 type Cell = Word8
 
