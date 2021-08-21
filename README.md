@@ -15,10 +15,10 @@ Available options:
 ```
 
 ## Download
-You can find binary releases for linux at the [releases page](https://github.com/leonardoarroyo/hsbf/releases). There is no macOS releases for now, but you should be able to build from source with `stack build`.
+You can find binary releases for linux at the [releases page](https://github.com/leonardoarroyo/hsbf/releases). There is no macOS release for now, but you should be able to build from source with `stack build`.
 
-## Todo
-* Allow for configurable cell size(currently 8bit, interpreter should be able to handle 16, 32 and 64bit cells as well)
-* Improve test suite
+## Status
+The current hsbf release is a fully functional brainfuck interpreter, but still under development. Here are some of the stuff in the todo list:
+* Improve test suite coverage
 * Add debugging capabilities
 * Maybe turn this into a compiler for fun

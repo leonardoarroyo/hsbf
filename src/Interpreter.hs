@@ -19,14 +19,14 @@ import Control.Monad.State
 import Data.Char (chr, ord)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
-import Data.Word (Word8)
+import Data.Word (Word64, Word8)
 import Safe (headDef, tailSafe)
 import System.Random (StdGen, getStdGen, randomR)
 import Text.Parsec (parse)
 
 data Status = Running | Exited deriving (Eq, Show)
 
-type Cell = Word8
+type Cell = Word64
 
 type Tape = M.Map Int Cell
 
