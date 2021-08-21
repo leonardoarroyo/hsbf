@@ -14,12 +14,11 @@ Available options:
   -h,--help                Show this help text
 ```
 
-## Status
-This project, although functional, is under active development. There's no release cycle defined, but one should be able to compile it with ease by running `stack build`.
+## Download
+You can find binary releases for linux at the [releases page](https://github.com/leonardoarroyo/hsbf/releases). There is no macOS releases for now, but you should be able to build from source with `stack build`.
 
 ## Todo
 * Allow for configurable cell size(currently 8bit, interpreter should be able to handle 16, 32 and 64bit cells as well)
 * Improve test suite
-* Create build and release workflow
 * Add debugging capabilities
 * Maybe turn this into a compiler for fun

@@ -6,7 +6,6 @@ author: "Leonardo Arroyo"
 
 extra-source-files:
   - README.md
-  - ChangeLog.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -15,7 +14,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description: Please see the README on GitHub at <https://github.com/githubuser/hsbf#readme>
+description: Please see the README on GitHub at <https://github.com/leonardoarroyo/hsbf#readme>
 
 dependencies:
   - base >= 4.7 && < 5
